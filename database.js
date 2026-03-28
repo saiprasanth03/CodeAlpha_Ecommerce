@@ -1,44 +1,54 @@
-const Database = require('better-sqlite3');
+const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-const db = new Database(path.join(__dirname, 'database.sqlite'));
+const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'));
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL
-  );
+// Create tables
+db.serialize(() => {
+  db.run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL
+    )
+  `);
 
-  CREATE TABLE IF NOT EXISTS products (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    description TEXT,
-    price REAL NOT NULL,
-    image_url TEXT,
-    category TEXT
-  );
+  db.run(`
+    CREATE TABLE IF NOT EXISTS products (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      price REAL NOT NULL,
+      image_url TEXT,
+      category TEXT
+    )
+  `);
 
-  CREATE TABLE IF NOT EXISTS orders (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    total_amount REAL NOT NULL,
-    status TEXT DEFAULT 'pending',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users (id)
-  );
+  db.run(`
+    CREATE TABLE IF NOT EXISTS orders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      total_amount REAL NOT NULL,
+      status TEXT DEFAULT 'pending',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id)
+    )
+  `);
 
-  CREATE TABLE IF NOT EXISTS order_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    order_id INTEGER NOT NULL,
-    product_id INTEGER NOT NULL,
-    quantity INTEGER NOT NULL,
-    price REAL NOT NULL,
-    FOREIGN KEY (order_id) REFERENCES orders (id),
-    FOREIGN KEY (product_id) REFERENCES products (id)
-  );
-`);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS order_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id INTEGER NOT NULL,
+      product_id INTEGER NOT NULL,
+      quantity INTEGER NOT NULL,
+      price REAL NOT NULL,
+      FOREIGN KEY (order_id) REFERENCES orders (id),
+      FOREIGN KEY (product_id) REFERENCES products (id)
+    )
+  `);
+});
+
 
 // Seed some products
 const seedProducts = [
@@ -107,15 +117,21 @@ const seedProducts = [
   }
 ];
 
-const insertProduct = db.prepare('INSERT OR IGNORE INTO products (name, description, price, image_url, category) VALUES (?, ?, ?, ?, ?)');
+
 
 // Clear existing products and re-seed (handling foreign key constraints)
-db.exec('PRAGMA foreign_keys = OFF');
-db.prepare('DELETE FROM products').run();
-db.exec('PRAGMA foreign_keys = ON');
+db.serialize(() => {
+  db.run('PRAGMA foreign_keys = OFF');
+  db.run('DELETE FROM products');
+  db.run('PRAGMA foreign_keys = ON');
 
-for (const product of seedProducts) {
-  insertProduct.run(product.name, product.description, product.price, product.image_url, product.category);
-}
+  const stmt = db.prepare(
+    'INSERT OR IGNORE INTO products (name, description, price, image_url, category) VALUES (?, ?, ?, ?, ?)'
+  );
 
-module.exports = db;
+  seedProducts.forEach(p => {
+    stmt.run(p.name, p.description, p.price, p.image_url, p.category);
+  });
+
+  stmt.finalize();
+});
