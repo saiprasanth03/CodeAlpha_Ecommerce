@@ -84,3 +84,9 @@ const seedProducts = [
     category: 'Accessories'
   }
 ];
+const seedDB = async () => {
+  await Product.deleteMany({});   // 👈 clear old data
+  await Product.insertMany(seedProducts);
+  console.log("✅ Products seeded");
+};
+module.exports = seedDB;
