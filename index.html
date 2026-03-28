@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina | Premium E-commerce</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="logo" onclick="app.navigate('home')">LUMINA</div>
+        <nav id="navbar">
+            <a onclick="app.navigate('home')">Home</a>
+            <a onclick="app.navigate('shop')">Shop</a>
+            <div id="auth-links">
+                <a onclick="app.navigate('login')">Login</a>
+                <a onclick="app.navigate('register')">Register</a>
+            </div>
+            <div class="cart-icon" onclick="app.navigate('cart')">
+                🛒 <span class="cart-count">0</span>
+            </div>
+        </nav>
+    </header>
+
+    <main id="app">
+        <!-- Content injected by app.js -->
+    </main>
+
+    <div id="notification" class="notification"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
