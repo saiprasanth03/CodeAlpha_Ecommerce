@@ -1,3 +1,4 @@
+const { Product } = require('./models');
 const seedProducts = [
   {
     name: 'Smart Pro Watch',
